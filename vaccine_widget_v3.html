@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Illinois School Vaccination Rates</title>
+<style>
+  #ilvacc-widget * { box-sizing: border-box; margin: 0; padding: 0; }
+  #ilvacc-widget {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: #fff;
+    color: #1a1a2e;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 28px 24px 20px;
+    border-top: 4px solid #162b75;
+  }
+  #ilvacc-widget .iw-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #162b75;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  #ilvacc-widget .iw-subtitle {
+    font-size: 0.92rem;
+    color: #555;
+    margin-top: 4px;
+    font-style: italic;
+    margin-bottom: 18px;
+  }
+  /* Controls */
+  #ilvacc-widget .iw-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+  #ilvacc-widget .iw-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 190px;
+  }
+  #ilvacc-widget .iw-control-group.iw-vax-group { min-width: 150px; flex: 0 0 auto; }
+  #ilvacc-widget .iw-control-group .iw-search-wrap { display: flex; flex-direction: column; }
+  #ilvacc-widget label.iw-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #162b75;
+  }
+  #ilvacc-widget select.iw-select,
+  #ilvacc-widget input.iw-input {
+    font-family: inherit;
+    font-size: 0.88rem;
+    padding: 7px 10px;
+    border: 1.5px solid #c8cedf;
+    border-radius: 3px;
+    color: #1a1a2e;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  #ilvacc-widget select.iw-select:focus,
+  #ilvacc-widget input.iw-input:focus { border-color: #162b75; }
+  /* Toggle */
+  #ilvacc-widget .iw-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  #ilvacc-widget .iw-toggle-btn {
+    font-family: inherit;
+    font-size: 0.78rem;
+    padding: 5px 12px;
+    border: 1.5px solid #c0392b;
+    border-radius: 2px;
+    cursor: pointer;
+    background: #fff;
+    color: #c0392b;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    transition: background 0.15s, color 0.15s;
+  }
+  #ilvacc-widget .iw-toggle-btn.active {
+    background: #c0392b;
+    color: #fff;
+  }
+  #ilvacc-widget .iw-toggle-label {
+    font-size: 0.78rem;
+    color: #666;
+    font-style: italic;
+  }
+  /* Search */
+  #ilvacc-widget .iw-search-wrap { position: relative; }
+  #ilvacc-widget .iw-dropdown {
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    background: #fff;
+    border: 1.5px solid #162b75;
+    border-top: none;
+    border-radius: 0 0 3px 3px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(22,43,117,0.12);
+    display: none;
+  }
+  #ilvacc-widget .iw-dropdown-item {
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 0.84rem;
+    border-bottom: 1px solid #f0f0f0;
+    line-height: 1.3;
+  }
+  #ilvacc-widget .iw-dropdown-item:last-child { border-bottom: none; }
+  #ilvacc-widget .iw-dropdown-item:hover { background: #eef1f9; }
+  #ilvacc-widget .iw-di-dist { display: block; font-size: 0.75rem; color: #777; margin-top: 1px; }
+  #ilvacc-widget .iw-selected-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  #ilvacc-widget .iw-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: #fff; font-size: 0.78rem; padding: 4px 9px; border-radius: 2px;
+  }
+  #ilvacc-widget .iw-tag button {
+    background: none; border: none; color: #fff;
+    cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 0 0 0 2px; opacity: 0.8;
+  }
+  #ilvacc-widget .iw-tag button:hover { opacity: 1; }
+  /* Chart */
+  #ilvacc-widget .iw-chart-wrap { position: relative; width: 100%; margin-bottom: 4px; }
+  #ilvacc-widget canvas.iw-canvas { display: block; width: 100%; }
+  /* Tooltip */
+  #ilvacc-widget .iw-tooltip {
+    position: absolute;
+    background: #162b75;
+    color: #fff;
+    padding: 9px 12px;
+    border-radius: 3px;
+    font-size: 0.78rem;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    line-height: 1.6;
+    display: none;
+    max-width: 300px;
+    white-space: normal;
+  }
+  /* Legend */
+  #ilvacc-widget .iw-legend {
+    display: flex; flex-wrap: wrap;
+    gap: 8px 16px;
+    margin: 10px 0 14px;
+    padding-left: 56px;
+  }
+  #ilvacc-widget .iw-legend-item {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 0.77rem; color: #444;
+  }
+  #ilvacc-widget .iw-legend-swatch {
+    flex-shrink: 0; width: 26px; height: 2.5px; border-radius: 1px;
+  }
+  /* Tdap note */
+  #ilvacc-widget .iw-note {
+    font-size: 0.75rem; color: #555; font-style: italic;
+    background: #f4f6fb; border-left: 3px solid #162b75;
+    padding: 6px 10px; margin-bottom: 10px; display: none;
+  }
+  /* Summary */
+  #ilvacc-widget .iw-summary {
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: #333;
+    margin-bottom: 14px;
+    border-left: 3px solid #162b75;
+    padding-left: 12px;
+  }
+  /* Source */
+  #ilvacc-widget .iw-source {
+    font-size: 0.72rem; color: #888; font-style: italic;
+    margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px;
+  }
+  /* Loading/error */
+  #ilvacc-widget .iw-loading { text-align: center; padding: 40px; font-size: 0.9rem; color: #888; }
+  #ilvacc-widget .iw-error {
+    font-size: 0.82rem; color: #c0392b;
+    background: #fdf3f3; border: 1px solid #f5c6cb;
+    border-radius: 3px; padding: 8px 12px; margin-bottom: 10px;
+  }
+  @media (max-width: 520px) {
+    #ilvacc-widget .iw-legend { padding-left: 8px; }
+    #ilvacc-widget .iw-title { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+<div id="ilvacc-widget">
+
+  <div class="iw-title">Before the next outbreak: How vaccinated is your school?</div>
+  <div class="iw-subtitle">Vaccination rates by school over time</div>
+
+  <p class="iw-summary">Illinois school vaccination rates have declined steadily over the past two decades &mdash; measles protection among students statewide stood at 99% in 2007&#8211;08 but fell to a low of 96.5% in 2023&#8211;24, a drop that experts warn could leave communities vulnerable to outbreaks of diseases once considered largely eliminated.</p>
+
+  <div class="iw-controls">
+    <div class="iw-control-group iw-vax-group">
+      <label class="iw-label" for="iw-vax-select">Vaccine</label>
+      <select id="iw-vax-select" class="iw-select"></select>
+    </div>
+    <div class="iw-control-group">
+      <label class="iw-label" for="iw-school-input">Search for your school</label>
+      <div class="iw-search-wrap">
+        <input id="iw-school-input" class="iw-input" type="text"
+               placeholder="Type school or district name&hellip;" autocomplete="off">
+        <div id="iw-school-dropdown" class="iw-dropdown"></div>
+      </div>
+      <div id="iw-selected-tags" class="iw-selected-tags"></div>
+    </div>
+  </div>
+
+  <div class="iw-toggle-row">
+    <button id="iw-toggle-lowest" class="iw-toggle-btn">Show lowest schools</button>
+    <span class="iw-toggle-label">Shows the lowest&#8209;reporting public and private school each year</span>
+  </div>
+
+  <div id="iw-tdap-note" class="iw-note">
+    Note: Tdap became a required school vaccine in Illinois beginning with the 2011&#8211;12 school year. Earlier data reflects limited, voluntary reporting.
+  </div>
+
+  <div id="iw-error-msg" class="iw-error" style="display:none"></div>
+  <div id="iw-loading" class="iw-loading">Loading school data&hellip;</div>
+
+  <div id="iw-main" style="display:none">
+    <div class="iw-chart-wrap">
+      <canvas id="iw-canvas" class="iw-canvas"></canvas>
+      <div id="iw-tooltip" class="iw-tooltip"></div>
+    </div>
+    <div id="iw-legend" class="iw-legend"></div>
+  </div>
+
+  <p class="iw-source">Source: Illinois State Board of Education Immunization School Survey Results</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const DATA = {"Measles":{"sw":{"2007-08":99.0,"2008-09":97.92,"2009-10":98.24,"2010-11":98.34,"2011-12":98.28,"2012-13":98.21,"2013-14":98.3,"2014-15":98.25,"2015-16":98.27,"2016-17":98.21,"2017-18":98.22,"2018-19":98.09,"2019-20":97.99,"2020-21":98.11,"2021-22":97.51,"2022-23":97.29,"2023-24":96.47,"2024-25":96.53,"2025-26":96.77},"lp":{"2007-08":{"p":80.54,"f":"Kipling Elementary School","d":"Deerfield School District 109","lt":false},"2008-09":{"p":58.41,"f":"LaSalle II Lang Academy Elementary School","d":"Chicago Public Schools District 299","lt":false},"2009-10":{"p":47.06,"f":"Hope Inst Lrning Academy Elementary School","d":"City of Chicago School District 299","lt":false},"2010-11":{"p":64.51,"f":"Asian Human Services -Passage Chrtr","d":"Chicago Public Schools District 299","lt":false},"2011-12":{"p":53.08,"f":"Sullivan Elementary School","d":"Sullivan School District 300","lt":false},"2012-13":{"p":17.2,"f":"Lostant Elementary School","d":"Lostant School District 425","lt":false},"2013-14":{"p":26.81,"f":"Mokena Elementary School","d":"Mokena School District 159","lt":false},"2014-15":{"p":46.0,"f":"Pleviak Elementary School","d":"Round Lake School District 116","lt":false},"2015-16":{"p":61.0,"f":"Calvary Baptist Academy","d":"","lt":false},"2016-17":{"p":42.0,"f":"Ravenswood Baptist Christian School","d":"","lt":false},"2017-18":{"p":47.0,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":false},"2018-19":{"p":62.0,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2023-24":{"p":60.0,"f":"Circles of Learning","d":"","lt":false},"2024-25":{"p":5.88,"f":"Braceville Elementary School","d":"Braceville School District 75","lt":true},"2025-26":{"p":21.43,"f":"Chester Early Learning Center","d":"Chester School District 139","lt":false},"2019-20":{"p":47.27,"f":"Oliver Parks 6th Grade School","d":"Cahokia School District 187","lt":false},"2020-21":{"p":66.08,"f":"Intrinsic 2 Charter High School","d":"","lt":false},"2021-22":{"p":38.67,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2022-23":{"p":38.98,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":false}},"lr":{"2007-08":{"p":60.98,"f":"Da Vinci Waldorf School","d":"Lake Regional Office of Education","lt":false},"2008-09":{"p":76.25,"f":"Bobbie Noonans Child Care","d":"Private School","lt":false},"2009-10":{"p":54.43,"f":"Da Vinci Waldorf School","d":"Lake Regional Office of Education","lt":false},"2010-11":{"p":36.14,"f":"The Ancona School","d":"","lt":false},"2011-12":{"p":32.58,"f":"Embers Academy","d":"Region 05 North Cook ISC 1","lt":false},"2012-13":{"p":25.99,"f":"Salem Christian School","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2013-14":{"p":25.14,"f":"Muhammad University","d":"","lt":false},"2014-15":{"p":1.0,"f":"Queen of the Universe","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2015-16":{"p":24.0,"f":"Muhammad University","d":"","lt":false},"2016-17":{"p":51.0,"f":"Guardian Angel Orthodox Day School","d":"Region 05 North Cook ISC 1","lt":false},"2017-18":{"p":61.0,"f":"Prairie School of DuPage","d":"DuPage Regional Office of Education","lt":false},"2018-19":{"p":10.0,"f":"Muhammad University","d":"","lt":false},"2019-20":{"p":12.84,"f":"Muhammad University","d":"","lt":false},"2020-21":{"p":5.0,"f":"Muhammad University","d":"","lt":true},"2021-22":{"p":22.22,"f":"Muhammad University","d":"","lt":false},"2022-23":{"p":8.0,"f":"Muhammad University","d":"","lt":true},"2023-24":{"p":4.82,"f":"Muhammad University","d":"","lt":true},"2024-25":{"p":17.28,"f":"Muhammad University","d":"","lt":false},"2025-26":{"p":12.09,"f":"Muhammad University","d":"","lt":false}},"ht":95},"Polio":{"sw":{"2007-08":99.06,"2008-09":98.37,"2009-10":98.5,"2010-11":98.43,"2011-12":98.33,"2012-13":98.26,"2019-20":97.99,"2020-21":98.13,"2021-22":97.47,"2022-23":97.21,"2023-24":95.85,"2024-25":96.04,"2025-26":96.29},"lp":{"2007-08":{"p":86.35,"f":"Dr Howard Elementary School","d":"Champaign School District 4","lt":false},"2008-09":{"p":65.93,"f":"LaSalle II Lang Academy Elementary School","d":"Chicago Public Schools District 299","lt":false},"2009-10":{"p":62.25,"f":"Hope Inst Lrning Academy Elementary School","d":"City of Chicago School District 299","lt":false},"2010-11":{"p":62.29,"f":"Lorenzo R Smith Elementary School","d":"Pembroke School District 259","lt":false},"2011-12":{"p":54.77,"f":"Sullivan Elementary School","d":"Sullivan School District 300","lt":false},"2012-13":{"p":16.13,"f":"Lostant Elementary School","d":"Lostant School District 425","lt":false},"2023-24":{"p":53.87,"f":"Salazar Elementary Bilingual Center","d":"Chicago Public Schools District 299","lt":false},"2024-25":{"p":3.36,"f":"Braceville Elementary School","d":"Braceville School District 75","lt":true},"2025-26":{"p":30.81,"f":"Intrinsic 2 Charter High School","d":"","lt":false},"2019-20":{"p":47.27,"f":"Oliver Parks 6th Grade School","d":"Cahokia School District 187","lt":false},"2020-21":{"p":62.65,"f":"Intrinsic 2 Charter High School","d":"","lt":false},"2021-22":{"p":39.06,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2022-23":{"p":33.23,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":false}},"lr":{"2007-08":{"p":60.98,"f":"Da Vinci Waldorf School","d":"Lake Regional Office of Education","lt":false},"2008-09":{"p":60.61,"f":"Seton Academy","d":"DuPage Regional Office of Education","lt":false},"2009-10":{"p":51.61,"f":"Seton Academy","d":"DuPage Regional Office of Education","lt":false},"2010-11":{"p":36.14,"f":"The Ancona School","d":"","lt":false},"2011-12":{"p":32.58,"f":"Embers Academy","d":"Region 05 North Cook ISC 1","lt":false},"2012-13":{"p":25.42,"f":"Salem Christian School","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2019-20":{"p":12.84,"f":"Muhammad University","d":"","lt":false},"2020-21":{"p":5.0,"f":"Muhammad University","d":"","lt":true},"2021-22":{"p":22.22,"f":"Muhammad University","d":"","lt":false},"2022-23":{"p":8.0,"f":"Muhammad University","d":"","lt":true},"2023-24":{"p":4.82,"f":"Muhammad University","d":"","lt":true},"2024-25":{"p":17.28,"f":"Muhammad University","d":"","lt":false},"2025-26":{"p":12.09,"f":"Muhammad University","d":"","lt":false}},"ht":80},"DTP/DTaP/TD":{"sw":{"2007-08":98.81,"2008-09":97.29,"2009-10":97.54,"2010-11":97.99,"2011-12":97.89,"2012-13":97.92,"2013-14":98.2,"2014-15":98.25,"2015-16":97.56,"2016-17":98.21,"2017-18":98.25,"2018-19":98.1,"2019-20":98.02,"2020-21":98.17,"2021-22":97.51,"2022-23":97.26,"2023-24":96.13,"2024-25":95.95,"2025-26":96.14},"lp":{"2007-08":{"p":80.0,"f":"Knoxville Cntr Student Success","d":"Peoria School District 150","lt":false},"2008-09":{"p":46.02,"f":"Ford Power House Charter High School","d":"City of Chicago School District 299","lt":false},"2009-10":{"p":56.42,"f":"Ford Power House Charter High School","d":"City of Chicago School District 299","lt":false},"2010-11":{"p":46.8,"f":"Lorenzo R Smith Elementary School","d":"Pembroke School District 259","lt":false},"2011-12":{"p":54.95,"f":"Sullivan Elementary School","d":"Sullivan School District 300","lt":false},"2012-13":{"p":16.13,"f":"Lostant Elementary School","d":"Lostant School District 425","lt":false},"2013-14":{"p":26.66,"f":"Mokena Elementary School","d":"Mokena School District 159","lt":false},"2014-15":{"p":45.0,"f":"Pleviak Elementary School","d":"Round Lake School District 116","lt":false},"2015-16":{"p":59.0,"f":"Calvary Baptist Academy","d":"","lt":false},"2016-17":{"p":42.0,"f":"Ravenswood Baptist Christian School","d":"","lt":false},"2017-18":{"p":47.0,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":false},"2018-19":{"p":62.0,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2023-24":{"p":37.08,"f":"East Elementary School","d":"Zion ESD 6","lt":false},"2024-25":{"p":5.88,"f":"Braceville Elementary School","d":"Braceville School District 75","lt":true},"2025-26":{"p":23.52,"f":"Manteno Middle School","d":"Manteno School District 5","lt":false},"2019-20":{"p":47.27,"f":"Oliver Parks 6th Grade School","d":"Cahokia School District 187","lt":false},"2020-21":{"p":66.97,"f":"North Wamac Grade School","d":"North Wamac School District 186","lt":false},"2021-22":{"p":23.73,"f":"Tri-Point High School","d":"Tri Point School District 6-J","lt":false},"2022-23":{"p":31.63,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":false}},"lr":{"2007-08":{"p":60.98,"f":"Da Vinci Waldorf School","d":"Lake Regional Office of Education","lt":false},"2008-09":{"p":76.25,"f":"Bobbie Noonans Child Care","d":"Private School","lt":false},"2009-10":{"p":56.96,"f":"Da Vinci Waldorf School","d":"Lake Regional Office of Education","lt":false},"2010-11":{"p":36.14,"f":"The Ancona School","d":"","lt":false},"2011-12":{"p":32.58,"f":"Embers Academy","d":"Region 05 North Cook ISC 1","lt":false},"2012-13":{"p":27.12,"f":"Salem Christian School","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2013-14":{"p":25.14,"f":"Muhammad University","d":"","lt":false},"2014-15":{"p":51.0,"f":"Muhammad University","d":"","lt":false},"2015-16":{"p":27.0,"f":"Maternity B V M School","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2016-17":{"p":51.0,"f":"Guardian Angel Orthodox Day School","d":"Region 05 North Cook ISC 1","lt":false},"2017-18":{"p":68.0,"f":"Prairie School of DuPage","d":"DuPage Regional Office of Education","lt":false},"2018-19":{"p":10.0,"f":"Muhammad University","d":"","lt":false},"2019-20":{"p":12.84,"f":"Muhammad University","d":"","lt":false},"2020-21":{"p":5.0,"f":"Muhammad University","d":"","lt":true},"2021-22":{"p":22.22,"f":"Muhammad University","d":"","lt":false},"2022-23":{"p":8.0,"f":"Muhammad University","d":"","lt":true},"2023-24":{"p":4.82,"f":"Muhammad University","d":"","lt":true},"2024-25":{"p":17.28,"f":"Muhammad University","d":"","lt":false},"2025-26":{"p":12.09,"f":"Muhammad University","d":"","lt":false}},"ht":92},"Tdap":{"sw":{"2012-13":28.5,"2013-14":58.37,"2014-15":96.21,"2015-16":97.9,"2016-17":96.27,"2017-18":96.56,"2018-19":96.07,"2019-20":96.83,"2020-21":96.86,"2021-22":95.87,"2022-23":95.81,"2023-24":92.52,"2024-25":93.3,"2025-26":95.12},"lp":{"2012-13":{"p":0.17,"f":"Meehan Elementary School","d":"Belvidere School District 100","lt":false},"2013-14":{"p":0.23,"f":"Jerseyville East Elementary School","d":"Jersey School District 100","lt":false},"2014-15":{"p":25.0,"f":"Monticello Christian Academy","d":"Macon/Piatt Regional Office of Education","lt":false},"2015-16":{"p":58.0,"f":"Holmes Elementary School","d":"Harvey School District 152","lt":false},"2016-17":{"p":18.0,"f":"Montessori of Englewood Chtr ES","d":"Chicago Public Schools District 299","lt":false},"2017-18":{"p":5.0,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2018-19":{"p":27.0,"f":"CICS - Bond Campus","d":"Chicago Public Schools District 299","lt":false},"2023-24":{"p":11.65,"f":"Lombard Middle School","d":"Galesburg School District 205","lt":false},"2024-25":{"p":22.05,"f":"Wilson Intermediate School","d":"Pekin PSD 108","lt":false},"2025-26":{"p":25.0,"f":"Cherry Hill Elementary and EC Center","d":"New Lenox School District 122","lt":true},"2019-20":{"p":47.27,"f":"Oliver Parks 6th Grade School","d":"Cahokia School District 187","lt":false},"2020-21":{"p":22.98,"f":"King Middle Grade School","d":"Kankakee School District 111","lt":false},"2021-22":{"p":23.73,"f":"Tri-Point High School","d":"Tri Point School District 6-J","lt":false},"2022-23":{"p":3.0,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":true}},"lr":{"2012-13":{"p":0.5,"f":"Muhammad University","d":"","lt":false},"2013-14":{"p":1.03,"f":"Seton Montessori School","d":"DuPage Regional Office of Education","lt":false},"2014-15":{"p":25.0,"f":"Guardian Angel Orthodox Day School","d":"Region 05 North Cook ISC 1","lt":false},"2015-16":{"p":14.0,"f":"Muhammad University","d":"","lt":false},"2016-17":{"p":40.0,"f":"Intercultural Montessori","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2017-18":{"p":33.0,"f":"Old School Montessori","d":"Lake Regional Office of Education","lt":false},"2018-19":{"p":7.0,"f":"Muhammad University","d":"","lt":false},"2019-20":{"p":16.92,"f":"Muhammad University","d":"","lt":false},"2020-21":{"p":5.0,"f":"Seton Montessori School","d":"DuPage Regional Office of Education","lt":true},"2021-22":{"p":5.0,"f":"St John the Baptist","d":"Frankln/Johnsn/Massc/Willimsn Regional Office of Education","lt":true},"2022-23":{"p":4.88,"f":"St Mary School","d":"Kane Regional Office of Education","lt":true},"2023-24":{"p":4.76,"f":"Muhammad University","d":"","lt":true},"2024-25":{"p":13.73,"f":"Muhammad University","d":"","lt":true},"2025-26":{"p":5.0,"f":"Muhammad University","d":"","lt":true}},"ht":null},"Hepatitis B":{"sw":{"2007-08":63.14,"2008-09":62.34,"2009-10":62.63,"2010-11":63.07,"2011-12":68.95,"2012-13":68.91,"2013-14":69.15,"2014-15":98.27,"2015-16":98.23,"2016-17":98.17,"2017-18":98.26,"2018-19":98.08,"2019-20":98.01,"2020-21":98.17,"2021-22":97.48,"2022-23":97.35,"2023-24":96.77,"2024-25":97.07,"2025-26":97.16},"lp":{"2023-24":{"p":46.48,"f":"Early Learning Center","d":"Effingham School District 40","lt":false},"2024-25":{"p":30.2,"f":"Albers Elementary School","d":"Albers School District 63","lt":false},"2025-26":{"p":5.0,"f":"Mill Street Elementary School","d":"Naperville School District 203","lt":true},"2007-08":{"p":0.3,"f":"Pinckneyville Elementary School","d":"Pinckneyville School District 50","lt":false},"2009-10":{"p":0.17,"f":"Tripp School","d":"Aptakisic-Tripp School District 102","lt":false},"2010-11":{"p":0.21,"f":"Maryville Elementary School","d":"Collinsville School District 10","lt":false},"2011-12":{"p":0.21,"f":"Maryville Elementary School","d":"Collinsville School District 10","lt":false},"2012-13":{"p":0.14,"f":"William J Butler School","d":"Homer School District 33C","lt":false},"2013-14":{"p":0.14,"f":"William J Butler School","d":"Homer School District 33C","lt":false},"2014-15":{"p":60.0,"f":"Johnsonville Elementary School","d":"North Wayne School District 200","lt":false},"2015-16":{"p":52.0,"f":"Longwood Elementary School","d":"Brookwood School District 167","lt":false},"2016-17":{"p":33.0,"f":"Eastview Elementary School","d":"Canton Union School District 66","lt":false},"2017-18":{"p":33.0,"f":"Westfield Elementary School","d":"School District 89","lt":false},"2018-19":{"p":33.0,"f":"Hickory Point Elementary School","d":"Northbrook ESD 27","lt":false},"2008-09":{"p":0.25,"f":"McKinley Elementary School","d":"Ottawa ESD 141","lt":false},"2019-20":{"p":47.27,"f":"Oliver Parks 6th Grade School","d":"Cahokia School District 187","lt":false},"2020-21":{"p":65.79,"f":"R O W V A Jr and  Sr High School","d":"R O W V A School District 208","lt":false},"2021-22":{"p":5.0,"f":"Indian Trail Elementary School","d":"Summit Hill School District 161","lt":true},"2022-23":{"p":27.34,"f":"Lick Creek Elementary School","d":"Lick Creek School District 16","lt":false}},"lr":{"2007-08":{"p":7.32,"f":"Da Vinci Waldorf School","d":"Lake Regional Office of Education","lt":false},"2008-09":{"p":7.14,"f":"Antioch Christian Academy","d":"Macon/Piatt Regional Office of Education","lt":false},"2009-10":{"p":12.9,"f":"Seton Academy","d":"DuPage Regional Office of Education","lt":false},"2010-11":{"p":14.29,"f":"St Patrick Grade School","d":"Menard/Sangamon Regional Office of Education","lt":false},"2011-12":{"p":4.26,"f":"Shelia Daniels Christian Academy","d":"Lake Regional Office of Education","lt":false},"2012-13":{"p":7.37,"f":"Guardian Angel Orthodox Day School","d":"Region 05 North Cook ISC 1","lt":false},"2013-14":{"p":5.41,"f":"Urban Prairie Waldorf School","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2014-15":{"p":25.0,"f":"Guardian Angel Orthodox Day School","d":"Region 05 North Cook ISC 1","lt":false},"2015-16":{"p":14.0,"f":"Muhammad University","d":"","lt":false},"2016-17":{"p":11.0,"f":"Guardian Angel Orthodox Day School","d":"Region 05 North Cook ISC 1","lt":false},"2017-18":{"p":42.0,"f":"Guardian Angel Orthodox Day School","d":"Region 05 North Cook ISC 1","lt":false},"2018-19":{"p":7.0,"f":"Muhammad University","d":"","lt":false},"2019-20":{"p":16.92,"f":"Muhammad University","d":"","lt":false},"2020-21":{"p":5.0,"f":"Muhammad University","d":"","lt":true},"2021-22":{"p":22.22,"f":"Muhammad University","d":"","lt":false},"2022-23":{"p":1.33,"f":"Muhammad University","d":"","lt":true},"2023-24":{"p":5.19,"f":"Muhammad University","d":"","lt":true},"2024-25":{"p":17.28,"f":"Muhammad University","d":"","lt":false},"2025-26":{"p":12.09,"f":"Muhammad University","d":"","lt":false}},"ht":null},"Varicella":{"sw":{"2007-08":46.87,"2008-09":54.42,"2009-10":61.77,"2010-11":68.94,"2011-12":80.53,"2012-13":86.73,"2013-14":92.76,"2014-15":97.78,"2015-16":97.83,"2016-17":97.68,"2017-18":97.89,"2018-19":97.81,"2019-20":97.76,"2020-21":97.95,"2021-22":97.33,"2022-23":97.05,"2023-24":96.08,"2024-25":96.09,"2025-26":96.46},"lp":{"2007-08":{"p":0.13,"f":"Stratford Middle School","d":"School District 93","lt":false},"2008-09":{"p":0.12,"f":"Fulton Jr High School","d":"O Fallon School District 90","lt":false},"2009-10":{"p":0.86,"f":"Waubonsie Valley High School","d":"Indian Prairie School District 204","lt":false},"2010-11":{"p":0.58,"f":"Waubonsie Valley High School","d":"Indian Prairie School District 204","lt":false},"2011-12":{"p":5.88,"f":"Beardstown Charter School Learn Academy","d":"Beardstown School District 15","lt":false},"2012-13":{"p":8.33,"f":"Gail McKinzie High School","d":"Indian Prairie School District 204","lt":false},"2013-14":{"p":27.43,"f":"Mokena Elementary School","d":"Mokena School District 159","lt":false},"2014-15":{"p":42.0,"f":"Excel Academy of Southshore High School","d":"City of Chicago School District 299","lt":false},"2015-16":{"p":57.0,"f":"Banner West Academy High School","d":"City of Chicago School District 299","lt":false},"2016-17":{"p":42.0,"f":"Ravenswood Baptist Christian School","d":"","lt":false},"2017-18":{"p":45.0,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":false},"2018-19":{"p":62.0,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2023-24":{"p":56.08,"f":"Salazar Elementary Bilingual Center","d":"Chicago Public Schools District 299","lt":false},"2024-25":{"p":5.04,"f":"Braceville Elementary School","d":"Braceville School District 75","lt":true},"2025-26":{"p":34.29,"f":"Intrinsic 2 Charter High School","d":"","lt":false},"2019-20":{"p":47.27,"f":"Oliver Parks 6th Grade School","d":"Cahokia School District 187","lt":false},"2020-21":{"p":64.69,"f":"Intrinsic 2 Charter High School","d":"","lt":false},"2021-22":{"p":37.5,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2022-23":{"p":37.7,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":false}},"lr":{"2007-08":{"p":25.99,"f":"Peoria Christian School - Monroe","d":"","lt":false},"2008-09":{"p":48.94,"f":"Peoria Christian School - Monroe","d":"","lt":false},"2009-10":{"p":45.57,"f":"Da Vinci Waldorf School","d":"Lake Regional Office of Education","lt":false},"2010-11":{"p":36.14,"f":"The Ancona School","d":"","lt":false},"2011-12":{"p":32.58,"f":"Embers Academy","d":"Region 05 North Cook ISC 1","lt":false},"2012-13":{"p":25.99,"f":"Salem Christian School","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2013-14":{"p":24.58,"f":"Muhammad University","d":"","lt":false},"2014-15":{"p":1.0,"f":"Queen of the Universe","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2015-16":{"p":24.0,"f":"Muhammad University","d":"","lt":false},"2016-17":{"p":51.0,"f":"Guardian Angel Orthodox Day School","d":"Region 05 North Cook ISC 1","lt":false},"2017-18":{"p":44.0,"f":"Seton Academy","d":"DuPage Regional Office of Education","lt":false},"2018-19":{"p":10.0,"f":"Muhammad University","d":"","lt":false},"2019-20":{"p":12.84,"f":"Muhammad University","d":"","lt":false},"2020-21":{"p":5.0,"f":"Muhammad University","d":"","lt":true},"2021-22":{"p":22.22,"f":"Muhammad University","d":"","lt":false},"2022-23":{"p":1.33,"f":"Muhammad University","d":"","lt":true},"2023-24":{"p":4.82,"f":"Muhammad University","d":"","lt":true},"2024-25":{"p":17.28,"f":"Muhammad University","d":"","lt":false},"2025-26":{"p":12.09,"f":"Muhammad University","d":"","lt":false}},"ht":85},"Rubella":{"sw":{"2007-08":99.09,"2008-09":98.42,"2009-10":98.63,"2010-11":98.76,"2011-12":98.66,"2012-13":98.56,"2013-14":98.6,"2014-15":98.16,"2015-16":98.25,"2016-17":98.2,"2017-18":98.23,"2018-19":98.1,"2019-20":97.98,"2020-21":98.11,"2021-22":97.51,"2022-23":97.29,"2023-24":96.48,"2024-25":96.53,"2025-26":96.77},"lp":{"2007-08":{"p":81.99,"f":"Walden Elementary School","d":"Deerfield School District 109","lt":false},"2008-09":{"p":67.7,"f":"LaSalle II Lang Academy Elementary School","d":"Chicago Public Schools District 299","lt":false},"2009-10":{"p":62.25,"f":"Hope Inst Lrning Academy Elementary School","d":"City of Chicago School District 299","lt":false},"2010-11":{"p":65.66,"f":"Lorenzo R Smith Elementary School","d":"Pembroke School District 259","lt":false},"2011-12":{"p":59.25,"f":"Sullivan Elementary School","d":"Sullivan School District 300","lt":false},"2012-13":{"p":17.2,"f":"Lostant Elementary School","d":"Lostant School District 425","lt":false},"2013-14":{"p":26.81,"f":"Mokena Elementary School","d":"Mokena School District 159","lt":false},"2014-15":{"p":46.0,"f":"Pleviak Elementary School","d":"Round Lake School District 116","lt":false},"2015-16":{"p":61.0,"f":"Calvary Baptist Academy","d":"","lt":false},"2016-17":{"p":42.0,"f":"Ravenswood Baptist Christian School","d":"","lt":false},"2017-18":{"p":45.0,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":false},"2018-19":{"p":62.0,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2023-24":{"p":56.63,"f":"Emden Elementary School","d":"Hartsburg Emden School District 21","lt":false},"2024-25":{"p":5.88,"f":"Braceville Elementary School","d":"Braceville School District 75","lt":true},"2025-26":{"p":21.43,"f":"Chester Early Learning Center","d":"Chester School District 139","lt":false},"2019-20":{"p":47.27,"f":"Oliver Parks 6th Grade School","d":"Cahokia School District 187","lt":false},"2020-21":{"p":66.08,"f":"Intrinsic 2 Charter High School","d":"","lt":false},"2021-22":{"p":38.67,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2022-23":{"p":38.98,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":false}},"lr":{"2007-08":{"p":60.98,"f":"Da Vinci Waldorf School","d":"Lake Regional Office of Education","lt":false},"2008-09":{"p":54.55,"f":"Seton Academy","d":"DuPage Regional Office of Education","lt":false},"2009-10":{"p":48.39,"f":"Seton Academy","d":"DuPage Regional Office of Education","lt":false},"2010-11":{"p":36.14,"f":"The Ancona School","d":"","lt":false},"2011-12":{"p":32.58,"f":"Embers Academy","d":"Region 05 North Cook ISC 1","lt":false},"2012-13":{"p":25.99,"f":"Salem Christian School","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2013-14":{"p":25.14,"f":"Muhammad University","d":"","lt":false},"2014-15":{"p":1.0,"f":"Queen of the Universe","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2015-16":{"p":24.0,"f":"Muhammad University","d":"","lt":false},"2016-17":{"p":51.0,"f":"Guardian Angel Orthodox Day School","d":"Region 05 North Cook ISC 1","lt":false},"2017-18":{"p":61.0,"f":"Prairie School of DuPage","d":"DuPage Regional Office of Education","lt":false},"2018-19":{"p":10.0,"f":"Muhammad University","d":"","lt":false},"2019-20":{"p":12.84,"f":"Muhammad University","d":"","lt":false},"2020-21":{"p":5.0,"f":"Muhammad University","d":"","lt":true},"2021-22":{"p":22.22,"f":"Muhammad University","d":"","lt":false},"2022-23":{"p":8.0,"f":"Muhammad University","d":"","lt":true},"2023-24":{"p":4.82,"f":"Muhammad University","d":"","lt":true},"2024-25":{"p":17.28,"f":"Muhammad University","d":"","lt":false},"2025-26":{"p":12.09,"f":"Muhammad University","d":"","lt":false}},"ht":85},"Mumps":{"sw":{"2007-08":99.09,"2008-09":98.42,"2009-10":98.63,"2010-11":98.76,"2011-12":98.66,"2012-13":98.56,"2013-14":98.6,"2014-15":98.16,"2015-16":98.25,"2016-17":98.2,"2017-18":98.23,"2018-19":98.1,"2019-20":97.99,"2020-21":98.11,"2021-22":97.51,"2022-23":97.29,"2023-24":96.48,"2024-25":96.53,"2025-26":96.77},"lp":{"2007-08":{"p":83.88,"f":"Neoga Elementary School","d":"Neoga School District 3","lt":false},"2008-09":{"p":67.7,"f":"LaSalle II Lang Academy Elementary School","d":"Chicago Public Schools District 299","lt":false},"2009-10":{"p":62.25,"f":"Hope Inst Lrning Academy Elementary School","d":"City of Chicago School District 299","lt":false},"2010-11":{"p":65.66,"f":"Lorenzo R Smith Elementary School","d":"Pembroke School District 259","lt":false},"2011-12":{"p":59.25,"f":"Sullivan Elementary School","d":"Sullivan School District 300","lt":false},"2012-13":{"p":17.2,"f":"Lostant Elementary School","d":"Lostant School District 425","lt":false},"2013-14":{"p":26.81,"f":"Mokena Elementary School","d":"Mokena School District 159","lt":false},"2014-15":{"p":46.0,"f":"Pleviak Elementary School","d":"Round Lake School District 116","lt":false},"2015-16":{"p":61.0,"f":"Calvary Baptist Academy","d":"","lt":false},"2016-17":{"p":42.0,"f":"Ravenswood Baptist Christian School","d":"","lt":false},"2017-18":{"p":45.0,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":false},"2018-19":{"p":62.0,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2023-24":{"p":60.0,"f":"Circles of Learning","d":"","lt":false},"2024-25":{"p":5.88,"f":"Braceville Elementary School","d":"Braceville School District 75","lt":true},"2025-26":{"p":21.43,"f":"Chester Early Learning Center","d":"Chester School District 139","lt":false},"2019-20":{"p":47.27,"f":"Oliver Parks 6th Grade School","d":"Cahokia School District 187","lt":false},"2020-21":{"p":66.08,"f":"Intrinsic 2 Charter High School","d":"","lt":false},"2021-22":{"p":38.67,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2022-23":{"p":38.98,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":false}},"lr":{"2007-08":{"p":60.98,"f":"Da Vinci Waldorf School","d":"Lake Regional Office of Education","lt":false},"2008-09":{"p":54.55,"f":"Seton Academy","d":"DuPage Regional Office of Education","lt":false},"2009-10":{"p":48.39,"f":"Seton Academy","d":"DuPage Regional Office of Education","lt":false},"2010-11":{"p":36.14,"f":"The Ancona School","d":"","lt":false},"2011-12":{"p":32.58,"f":"Embers Academy","d":"Region 05 North Cook ISC 1","lt":false},"2012-13":{"p":25.99,"f":"Salem Christian School","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2013-14":{"p":25.14,"f":"Muhammad University","d":"","lt":false},"2014-15":{"p":51.0,"f":"Muhammad University","d":"","lt":false},"2015-16":{"p":24.0,"f":"Muhammad University","d":"","lt":false},"2016-17":{"p":51.0,"f":"Guardian Angel Orthodox Day School","d":"Region 05 North Cook ISC 1","lt":false},"2017-18":{"p":59.0,"f":"Prairie School of DuPage","d":"DuPage Regional Office of Education","lt":false},"2018-19":{"p":10.0,"f":"Muhammad University","d":"","lt":false},"2019-20":{"p":12.84,"f":"Muhammad University","d":"","lt":false},"2020-21":{"p":5.0,"f":"Muhammad University","d":"","lt":true},"2021-22":{"p":22.22,"f":"Muhammad University","d":"","lt":false},"2022-23":{"p":8.0,"f":"Muhammad University","d":"","lt":true},"2023-24":{"p":4.82,"f":"Muhammad University","d":"","lt":true},"2024-25":{"p":17.28,"f":"Muhammad University","d":"","lt":false},"2025-26":{"p":12.09,"f":"Muhammad University","d":"","lt":false}},"ht":null},"Pneumococcal":{"sw":{"2014-15":93.9,"2015-16":95.85,"2016-17":95.94,"2017-18":96.64,"2018-19":96.29,"2019-20":96.56,"2020-21":96.33,"2021-22":95.67,"2022-23":95.21,"2023-24":89.91,"2024-25":92.63,"2025-26":94.78},"lp":{"2014-15":{"p":22.0,"f":"Revere Elementary School","d":"Chicago Public Schools District 299","lt":false},"2015-16":{"p":50.0,"f":"Tri-State Christian School","d":"Carroll/Jo Daviess/Stephenson Regional Office of Education","lt":false},"2016-17":{"p":26.0,"f":"Faith Baptist Christian School","d":"","lt":false},"2017-18":{"p":50.0,"f":"Willow Grove Elementary School","d":"Willow Grove School District 46","lt":false},"2018-19":{"p":33.0,"f":"Hickory Point Elementary School","d":"Northbrook ESD 27","lt":false},"2023-24":{"p":7.69,"f":"Drake Elementary School","d":"Chicago Public Schools District 299","lt":true},"2024-25":{"p":20.0,"f":"Woodson South Elementary School","d":"Chicago Public Schools District 299","lt":true},"2025-26":{"p":5.0,"f":"Calvary Baptist Academy","d":"","lt":true},"2019-20":{"p":48.75,"f":"Lalumier Elementary School","d":"Cahokia School District 187","lt":false},"2020-21":{"p":42.86,"f":"Gardner Elementary School","d":"Gardner School District 72C","lt":true},"2021-22":{"p":5.0,"f":"Willow Grove Elementary School","d":"Willow Grove School District 46","lt":true},"2022-23":{"p":11.11,"f":"Tri-Point Jr High/Elementary","d":"Tri Point School District 6-J","lt":true}},"lr":{"2014-15":{"p":33.0,"f":"Ashburn Lutheran School","d":"Private School","lt":false},"2015-16":{"p":18.0,"f":"Crystal Lake Montessori","d":"McHenry Regional Office of Education","lt":false},"2016-17":{"p":40.0,"f":"Seton Academy","d":"DuPage Regional Office of Education","lt":false},"2017-18":{"p":38.0,"f":"Seton Academy","d":"DuPage Regional Office of Education","lt":false},"2018-19":{"p":50.0,"f":"Seton Academy","d":"DuPage Regional Office of Education","lt":false},"2019-20":{"p":14.89,"f":"Villa Montessori","d":"Rock Island Regional Office of Education","lt":true},"2020-21":{"p":5.0,"f":"St Hilary School","d":"Crawford-Lawrence Educ Serv Reg","lt":true},"2021-22":{"p":5.0,"f":"St Hilary School","d":"Crawford-Lawrence Educ Serv Reg","lt":true},"2022-23":{"p":17.65,"f":"St William School","d":"Region 06 West Cook ISC 2","lt":true},"2023-24":{"p":20.0,"f":"Seton Academy","d":"","lt":true},"2024-25":{"p":13.04,"f":"St Stanislaus Kostka  Academy","d":"Crawford-Lawrence Educ Serv Reg","lt":true},"2025-26":{"p":5.0,"f":"Trinity Academy","d":"Hancock/Fulton/Schuyler/McDonough Regional Office of Education","lt":true}},"ht":null},"Meningococcal":{"sw":{"2015-16":88.86,"2016-17":91.97,"2017-18":93.33,"2018-19":94.18,"2019-20":95.64,"2020-21":95.99,"2021-22":94.68,"2022-23":94.84,"2023-24":90.77,"2024-25":91.86,"2025-26":93.81},"lp":{"2015-16":{"p":1.0,"f":"Prologue Early College High School","d":"City of Chicago School District 299","lt":false},"2016-17":{"p":12.0,"f":"Prologue Early College High School","d":"City of Chicago School District 299","lt":false},"2017-18":{"p":7.0,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":false},"2018-19":{"p":25.0,"f":"CICS - Bond Campus","d":"Chicago Public Schools District 299","lt":false},"2023-24":{"p":9.4,"f":"Lombard Middle School","d":"Galesburg School District 205","lt":false},"2024-25":{"p":20.51,"f":"Wilson Intermediate School","d":"Pekin PSD 108","lt":false},"2025-26":{"p":12.17,"f":"Intrinsic 2 Charter High School","d":"","lt":false},"2019-20":{"p":5.13,"f":"Barbara A Sizemore Campus","d":"Betty Shabazz  International Charter School","lt":true},"2020-21":{"p":12.5,"f":"Riverview Elementary School","d":"Riverview School District 2","lt":true},"2021-22":{"p":5.0,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":true},"2022-23":{"p":7.0,"f":"Betty  Shabazz International Charter School","d":"Betty Shabazz  International Charter School","lt":true}},"lr":{"2015-16":{"p":9.0,"f":"Urban Prairie Waldorf School","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2016-17":{"p":23.0,"f":"Akiba-Schechter Day School","d":"Crawford-Lawrence Educ Serv Reg","lt":false},"2017-18":{"p":42.0,"f":"Guardian Angel Orthodox Day School","d":"Region 05 North Cook ISC 1","lt":false},"2018-19":{"p":5.0,"f":"Muhammad University","d":"","lt":false},"2019-20":{"p":13.73,"f":"Muhammad University","d":"","lt":true},"2020-21":{"p":5.0,"f":"Seton Montessori School","d":"DuPage Regional Office of Education","lt":true},"2021-22":{"p":5.0,"f":"Seton Academy","d":"","lt":true},"2022-23":{"p":4.88,"f":"St Mary School","d":"Kane Regional Office of Education","lt":true},"2023-24":{"p":4.76,"f":"Muhammad University","d":"","lt":true},"2024-25":{"p":13.73,"f":"Muhammad University","d":"","lt":true},"2025-26":{"p":5.0,"f":"Muhammad University","d":"","lt":true}},"ht":null}};
+
+  const ALL_YEARS = ["2007-08","2008-09","2009-10","2010-11","2011-12","2012-13",
+    "2013-14","2014-15","2015-16","2016-17","2017-18","2018-19",
+    "2019-20","2020-21","2021-22","2022-23","2023-24","2024-25","2025-26"];
+
+  const VACCINES = ["Measles","Polio","DTP/DTaP/TD","Tdap","Hepatitis B",
+    "Varicella","Rubella","Mumps","Pneumococcal","Meningococcal"];
+
+  const SCHOOLS_URL =
+    'https://raw.githubusercontent.com/mekcoleman/illinois-vaccines/main/schools.json.gz';
+
+  const C_STATE   = '#162b75';
+  const C_HERD    = '#2e8b57';   // forest green — herd immunity threshold
+  const C_LOW_PUB = '#c0392b';   // red solid
+  const C_LOW_PRI = '#c0392b';   // red dashed
+  const SCHOOL_PALETTE = ['#e07b00','#1a7a4a','#8b1a6b','#0e6e8c','#6b4226'];
+
+  let schoolsData   = null;
+  let currentVax    = 'Measles';
+  let showLowest    = false;
+  let selectedSchools = [];
+
+  const $id = id => document.getElementById(id);
+  const vaxSel    = $id('iw-vax-select');
+  const schoolIn  = $id('iw-school-input');
+  const schoolDrp = $id('iw-school-dropdown');
+  const tagsEl    = $id('iw-selected-tags');
+  const canvasEl  = $id('iw-canvas');
+  const tooltipEl = $id('iw-tooltip');
+  const legendEl  = $id('iw-legend');
+  const tdapNote  = $id('iw-tdap-note');
+  const loadingEl = $id('iw-loading');
+  const mainEl    = $id('iw-main');
+  const errorEl   = $id('iw-error-msg');
+  const toggleBtn = $id('iw-toggle-lowest');
+  const ctx       = canvasEl.getContext('2d');
+
+  const PAD = { top: 22, right: 20, bottom: 50, left: 54 };
+  let chartW = 0, chartH = 0;
+  // Store xPos/yPos functions for tooltip reuse
+  let _xPos, _yPos, _years;
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  function init() {
+    VACCINES.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v;
+      vaxSel.appendChild(o);
+    });
+    vaxSel.value = 'Measles';
+
+    vaxSel.addEventListener('change', () => {
+      currentVax = vaxSel.value;
+      tdapNote.style.display = currentVax === 'Tdap' ? 'block' : 'none';
+      render();
+    });
+
+    toggleBtn.addEventListener('click', () => {
+      showLowest = !showLowest;
+      toggleBtn.classList.toggle('active', showLowest);
+      render();
+    });
+
+    schoolIn.addEventListener('input', onSearch);
+    schoolIn.addEventListener('focus', onSearch);
+    document.addEventListener('click', e => {
+      if (!$id('ilvacc-widget').contains(e.target))
+        schoolDrp.style.display = 'none';
+    });
+    window.addEventListener('resize', debounce(render, 150));
+    fetchSchools();
+  }
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
+  async function fetchSchools() {
+    try {
+      const res = await fetch(SCHOOLS_URL);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const buf = await res.arrayBuffer();
+      const ds  = new DecompressionStream('gzip');
+      const wr  = ds.writable.getWriter();
+      const rd  = ds.readable.getReader();
+      wr.write(new Uint8Array(buf)); wr.close();
+      let chunks = [], tot = 0;
+      for (;;) {
+        const { done, value } = await rd.read();
+        if (done) break;
+        chunks.push(value); tot += value.length;
+      }
+      const merged = new Uint8Array(tot);
+      let off = 0;
+      for (const c of chunks) { merged.set(c, off); off += c.length; }
+      schoolsData = JSON.parse(new TextDecoder().decode(merged));
+    } catch (e) {
+      errorEl.textContent = 'School search is unavailable — could not load data. Statewide and reference lines are still shown.';
+      errorEl.style.display = 'block';
+    }
+    loadingEl.style.display = 'none';
+    mainEl.style.display    = 'block';
+    render();
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────────────
+  function onSearch() {
+    const q = schoolIn.value.trim().toLowerCase();
+    if (!schoolsData || q.length < 2) { schoolDrp.style.display = 'none'; return; }
+    const results = [];
+    for (const [rcdts, s] of Object.entries(schoolsData)) {
+      if (results.length >= 50) break;
+      if ((s.f || '').toLowerCase().includes(q) || (s.d || '').toLowerCase().includes(q)) {
+        if (s.v && s.v[currentVax]) results.push({ rcdts, f: s.f, d: s.d });
+      }
+    }
+    schoolDrp.innerHTML = '';
+    if (!results.length) { schoolDrp.style.display = 'none'; return; }
+    results.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'iw-dropdown-item';
+      div.innerHTML = `<strong>${esc(r.f)}</strong>` +
+        (r.d ? `<span class="iw-di-dist">${esc(r.d)}</span>` : '');
+      div.addEventListener('mousedown', e => { e.preventDefault(); addSchool(r.rcdts, r.f, r.d); });
+      schoolDrp.appendChild(div);
+    });
+    schoolDrp.style.display = 'block';
+  }
+
+  function addSchool(rcdts, name, dist) {
+    schoolDrp.style.display = 'none';
+    schoolIn.value = '';
+    if (selectedSchools.find(s => s.rcdts === rcdts)) return;
+    if (selectedSchools.length >= 4) selectedSchools.shift();
+    const color = SCHOOL_PALETTE[selectedSchools.length % SCHOOL_PALETTE.length];
+    selectedSchools.push({ rcdts, name, dist, color });
+    renderTags(); render();
+  }
+
+  function removeSchool(rcdts) {
+    selectedSchools = selectedSchools.filter(s => s.rcdts !== rcdts);
+    selectedSchools.forEach((s, i) => { s.color = SCHOOL_PALETTE[i]; });
+    renderTags(); render();
+  }
+
+  function renderTags() {
+    tagsEl.innerHTML = '';
+    selectedSchools.forEach(s => {
+      const sp = document.createElement('span');
+      sp.className = 'iw-tag';
+      sp.style.background = s.color;
+      const lbl = s.dist ? `${s.name}, ${s.dist}` : s.name;
+      sp.innerHTML = `${esc(lbl)}<button data-r="${s.rcdts}" title="Remove">&times;</button>`;
+      sp.querySelector('button').addEventListener('click', () => removeSchool(s.rcdts));
+      tagsEl.appendChild(sp);
+    });
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+  function render() {
+    const vax   = currentVax;
+    const vd    = DATA[vax] || {};
+    const sw    = vd.sw  || {};
+    const lp    = vd.lp  || {};   // year -> {p,f,d,lt}
+    const lr    = vd.lr  || {};
+    const ht    = vd.ht;          // herd threshold or null
+
+    // Year set
+    const yearSet = new Set(Object.keys(sw));
+    if (showLowest) {
+      Object.keys(lp).forEach(y => yearSet.add(y));
+      Object.keys(lr).forEach(y => yearSet.add(y));
+    }
+    selectedSchools.forEach(sel => {
+      Object.keys(getSchoolPts(sel.rcdts, vax)).forEach(y => yearSet.add(y));
+    });
+    const years = ALL_YEARS.filter(y => yearSet.has(y));
+    if (!years.length) return;
+    _years = years;
+
+    // Canvas
+    const cssW = canvasEl.parentElement.clientWidth || 700;
+    const dpr  = window.devicePixelRatio || 1;
+    const cssH = Math.max(300, Math.min(420, cssW * 0.52));
+    canvasEl.style.height = cssH + 'px';
+    canvasEl.width  = Math.round(cssW * dpr);
+    canvasEl.height = Math.round(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    chartW = cssW - PAD.left - PAD.right;
+    chartH = cssH - PAD.top  - PAD.bottom;
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    // Y range — always include herd threshold in range if present
+    const allVals = [
+      ...Object.values(sw),
+      ...(showLowest ? Object.values(lp).map(d => d.p) : []),
+      ...(showLowest ? Object.values(lr).map(d => d.p) : []),
+      ...selectedSchools.flatMap(sel => Object.values(getSchoolPts(sel.rcdts, vax)).map(d => d.p)),
+      ...(ht ? [ht] : [])
+    ].filter(v => v !== undefined && v !== null);
+
+    const rawMin = allVals.length ? Math.min(...allVals) : 80;
+    const rawMax = allVals.length ? Math.max(...allVals) : 100;
+    const yMin = Math.max(0,   Math.floor((rawMin - 5) / 5) * 5);
+    const yMax = Math.min(100, Math.ceil ((rawMax + 2) / 5) * 5);
+
+    const xPos = i  => PAD.left + (i / Math.max(years.length - 1, 1)) * chartW;
+    const yPos = v  => PAD.top  + (1 - (v - yMin) / (yMax - yMin)) * chartH;
+    _xPos = xPos; _yPos = yPos;
+
+    // ── Grid ──
+    ctx.save();
+    ctx.strokeStyle = '#e8eaf0'; ctx.lineWidth = 1;
+    niceTicks(yMin, yMax, 6).forEach(t => {
+      const y = yPos(t);
+      ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + chartW, y); ctx.stroke();
+      ctx.fillStyle = '#999'; ctx.font = '11px Georgia,serif';
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText(t + '%', PAD.left - 6, y);
+    });
+    ctx.restore();
+
+    // ── X labels ──
+    const skip = cssW < 500 ? 2 : 1;
+    ctx.save();
+    ctx.fillStyle = '#999'; ctx.font = '11px Georgia,serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    years.forEach((yr, i) => {
+      if (i % skip !== 0 && i !== years.length - 1) return;
+      ctx.fillText(yr, xPos(i), PAD.top + chartH + 8);
+    });
+    ctx.restore();
+
+    // ── Drawing helpers ──
+    function buildPts(seriesObj) {
+      return years.map((yr, i) => {
+        const d = seriesObj[yr];
+        return d !== undefined ? { x: xPos(i), y: yPos(d.p !== undefined ? d.p : d), yr, val: d.p !== undefined ? d.p : d, lt: d.lt } : null;
+      });
+    }
+
+    function drawLine(pts, color, lw, dashed, alpha) {
+      ctx.save();
+      ctx.globalAlpha = alpha !== undefined ? alpha : 1;
+      ctx.strokeStyle = color; ctx.lineWidth = lw;
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      if (dashed) ctx.setLineDash([7, 5]);
+      ctx.beginPath();
+      let pen = false;
+      pts.forEach(pt => {
+        if (!pt) { pen = false; return; }
+        if (!pen) { ctx.moveTo(pt.x, pt.y); pen = true; }
+        else       ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]); ctx.restore();
+    }
+
+    function drawDots(pts, color, r, alpha) {
+      ctx.save();
+      ctx.globalAlpha = alpha !== undefined ? alpha : 1;
+      ctx.fillStyle = color;
+      pts.forEach(pt => {
+        if (!pt) return;
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    // ── Herd immunity threshold ──
+    if (ht !== null && ht !== undefined) {
+      const yh = yPos(ht);
+      ctx.save();
+      ctx.strokeStyle = C_HERD; ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]); ctx.globalAlpha = 0.75;
+      ctx.beginPath(); ctx.moveTo(PAD.left, yh); ctx.lineTo(PAD.left + chartW, yh);
+      ctx.stroke(); ctx.setLineDash([]);
+      // Label at right end
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = C_HERD; ctx.font = 'bold 10px Georgia,serif';
+      ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+      ctx.fillText(`Herd immunity threshold (${ht}%)`, PAD.left + chartW - 2, yh - 3);
+      ctx.restore();
+    }
+
+    // ── Lowest school lines (optional) ──
+    if (showLowest) {
+      // Private (dashed)
+      const lrPts = buildPts(lr);
+      drawLine(lrPts, C_LOW_PRI, 1.8, true, 0.5);
+      drawDots(lrPts, C_LOW_PRI, 3, 0.7);
+      // Public (solid)
+      const lpPts = buildPts(lp);
+      drawLine(lpPts, C_LOW_PUB, 1.8, false, 0.5);
+      drawDots(lpPts, C_LOW_PUB, 3, 0.7);
+    }
+
+    // ── Selected user schools ──
+    selectedSchools.forEach(sel => {
+      const pts = buildPts(getSchoolPts(sel.rcdts, vax));
+      drawLine(pts, sel.color, 2.2, true, 0.85);
+      drawDots(pts, sel.color, 3.5);
+    });
+
+    // ── Statewide (always on top) ──
+    const swSeries = {};
+    years.forEach(yr => { if (sw[yr] !== undefined) swSeries[yr] = { p: sw[yr], lt: false }; });
+    const swPts = buildPts(swSeries);
+    drawLine(swPts, C_STATE, 3, false);
+    drawDots(swPts, C_STATE, 4);
+
+    renderLegend(ht, lp, lr);
+    setupTooltip(years, sw, lp, lr, ht, xPos);
+  }
+
+  function getSchoolPts(rcdts, vax) {
+    if (!schoolsData) return {};
+    const s = schoolsData[rcdts];
+    return (s && s.v && s.v[vax]) ? s.v[vax] : {};
+  }
+
+  // ── Legend ──────────────────────────────────────────────────────────────────
+  function renderLegend(ht, lp, lr) {
+    legendEl.innerHTML = '';
+    const items = [
+      { color: C_STATE, solid: true, alpha: 1, label: 'Statewide average' },
+    ];
+    if (ht) {
+      items.push({ color: C_HERD, dashed: true, alpha: 0.75, label: `Herd immunity threshold (${ht}%)` });
+    }
+    if (showLowest) {
+      items.push({ color: C_LOW_PUB, solid: true,  alpha: 0.55, label: 'Lowest public school (that year)' });
+      items.push({ color: C_LOW_PRI, dashed: true, alpha: 0.55, label: 'Lowest private school (that year)' });
+    }
+    selectedSchools.forEach(s => {
+      const lbl = s.dist ? `${s.name}, ${s.dist}` : s.name;
+      items.push({ color: s.color, dashed: true, alpha: 1, label: lbl });
+    });
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'iw-legend-item';
+      const bg = item.solid
+        ? `background:${item.color};opacity:${item.alpha};`
+        : `background:none;border-top:2.5px dashed ${item.color};opacity:${item.alpha};height:0;margin-top:1px;`;
+      div.innerHTML =
+        `<span class="iw-legend-swatch" style="${bg}"></span>` +
+        `<span>${esc(item.label)}</span>`;
+      legendEl.appendChild(div);
+    });
+  }
+
+  // ── Tooltip ──────────────────────────────────────────────────────────────────
+  function setupTooltip(years, sw, lp, lr, ht, xPos) {
+    canvasEl.onmousemove = function (e) {
+      const rect = canvasEl.getBoundingClientRect();
+      const mx   = e.clientX - rect.left;
+      let ni = 0, nd = Infinity;
+      years.forEach((_, i) => {
+        const d = Math.abs(xPos(i) - mx);
+        if (d < nd) { nd = d; ni = i; }
+      });
+      if (nd > chartW / Math.max(years.length, 1)) {
+        tooltipEl.style.display = 'none'; return;
+      }
+      const yr = years[ni];
+      let html = `<strong>${yr}</strong><br>`;
+      if (ht !== null && ht !== undefined) {
+        html += `<span style="color:#7ee8a2;">Herd immunity threshold: ${ht}%</span><br>`;
+      }
+      if (sw[yr] !== undefined) html += `Statewide: ${fmt(sw[yr])}<br>`;
+      if (showLowest) {
+        const lpd = lp[yr];
+        if (lpd) {
+          const lt = lpd.lt ? ' <em>(&lt;10 reported)</em>' : '';
+          const dn = lpd.d ? `, ${esc(lpd.d)}` : '';
+          html += `Lowest public: ${fmt(lpd.p)} &mdash; ${esc(lpd.f)}${dn}${lt}<br>`;
+        }
+        const lrd = lr[yr];
+        if (lrd) {
+          const lt = lrd.lt ? ' <em>(&lt;10 reported)</em>' : '';
+          const dn = lrd.d ? `, ${esc(lrd.d)}` : '';
+          html += `Lowest private: ${fmt(lrd.p)} &mdash; ${esc(lrd.f)}${dn}${lt}<br>`;
+        }
+      }
+      selectedSchools.forEach(sel => {
+        const pts = getSchoolPts(sel.rcdts, currentVax);
+        const d = pts[yr];
+        if (d) {
+          const lt = d.lt ? ' <em>(&lt;10 reported)</em>' : '';
+          const lbl = sel.dist ? `${sel.name}, ${sel.dist}` : sel.name;
+          html += `${esc(lbl)}: ${fmt(d.p)}${lt}<br>`;
+        }
+      });
+      tooltipEl.innerHTML = html;
+      tooltipEl.style.display = 'block';
+      const tw = tooltipEl.offsetWidth;
+      const th = tooltipEl.offsetHeight;
+      const tx = Math.max(0, Math.min(canvasEl.clientWidth - tw - 4, xPos(ni) - tw / 2));
+      // Position above the statewide line if possible
+      const swVal = sw[yr];
+      const tyBase = swVal !== undefined ? _yPos(swVal) : PAD.top + chartH / 2;
+      const ty = Math.max(4, tyBase - th - 14);
+      tooltipEl.style.left = tx + 'px';
+      tooltipEl.style.top  = ty + 'px';
+    };
+    canvasEl.onmouseleave = () => { tooltipEl.style.display = 'none'; };
+  }
+
+  // ── Utilities ──────────────────────────────────────────────────────────────
+  function niceTicks(min, max, n) {
+    const step = (max - min) / (n - 1);
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const v = Math.round((min + i * step) * 10) / 10;
+      if (v >= min && v <= max) out.push(v);
+    }
+    return [...new Set(out)];
+  }
+  function fmt(v)  { return v.toFixed(1) + '%'; }
+  function esc(s)  {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function debounce(fn, ms) {
+    let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
